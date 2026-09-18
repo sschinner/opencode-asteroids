@@ -444,7 +444,7 @@ class PowerUp {
     ctx.lineWidth   = 1.5;
     ctx.lineJoin    = 'round';
 
-// Icono según el tipo: cheurón (») velocidad, líneas paralelas triple, hexágono escudo
+    // Icono según el tipo: cheurón (») velocidad, líneas paralelas triple, hexágono escudo
     ctx.beginPath();
     if (this.type === 'speed') {
       // Doble cheurón (») — velocidad
@@ -589,7 +589,7 @@ function update(dt) {
   // Nave recoge power-up
   for (const p of powerups) {
     if (!p.dead && dist(ship, p) < ship.radius + p.radius) {
-if (p.type === 'triple') ship.tripleShot = TRIPLE_BOOST_DURATION;
+      if (p.type === 'triple') ship.tripleShot    = TRIPLE_BOOST_DURATION;
       else if (p.type === 'shield') ship.shield   = SHIELD_DURATION;
       else                          ship.speedBoost = SPEED_BOOST_DURATION;
       p.dead = true;
@@ -610,7 +610,7 @@ if (p.type === 'triple') ship.tripleShot = TRIPLE_BOOST_DURATION;
         a.dead = true;
         score += a.points;
         explode(a.x, a.y, a.explodeCount);
-// Drop de power-up (puede haber varios en pantalla)
+        // Drop de power-up (puede haber varios en pantalla)
         if (a.dropsPowerUp) {
           if (Math.random() < SPEED_DROP_CHANCE)
             powerups.push(new PowerUp(a.x, a.y, 'speed'));
@@ -680,7 +680,7 @@ function drawHUD() {
     ctx.fillStyle = '#fff';
   }
 
-if (ship.tripleShot > 0) {
+  if (ship.tripleShot > 0) {
     ctx.fillStyle = 'rgba(255,255,255,0.8)';
     ctx.fillText(`TRIPLE DISPARO ${Math.ceil(ship.tripleShot)}`, W / 2, 68);
     ctx.fillStyle = '#fff';

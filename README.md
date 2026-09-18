@@ -48,3 +48,11 @@ Luego visita `http://localhost:3000`.
 ## Skins
 
 La nave tiene 4 skins seleccionables en plena partida con las teclas `1`-`4`: **Clásica**, **Aguja**, **Pesada** e **Interceptor**. Cada skin cambia la silueta, el color de la nave, la llama del propulsor y las estelas de velocidad; la elección se guarda en `localStorage`.
+
+## Power-ups
+
+Los asteroides pueden soltar power-ups que la nave recoge al tocarlos (puede haber varios en pantalla):
+
+- **Velocidad** (`»`) — propulsión doble durante 5 segundos
+- **Tiro triple** (`|||`) — dispara 3 balas paralelas durante 5 segundos
+- **Escudo** (`⬡`) — aro protector que absorbe impactos durante 6 segundos
