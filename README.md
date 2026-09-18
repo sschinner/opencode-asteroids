@@ -29,6 +29,7 @@ Luego visita `http://localhost:3000`.
 | `←` `→`   | Rotar nave |
 | `↑`       | Propulsar  |
 | `Espacio` | Disparar   |
+| `1`-`4`   | Cambiar skin de la nave |
 
 ## Puntuación
 
@@ -43,3 +44,7 @@ Luego visita `http://localhost:3000`.
 - 3 vidas con invencibilidad temporal al reaparecer (parpadeo)
 - Asteroides se parten en fragmentos más pequeños al ser destruidos
 - Partículas de explosión al destruir asteroides
+
+## Skins
+
+La nave tiene 4 skins seleccionables en plena partida con las teclas `1`-`4`: **Clásica**, **Aguja**, **Pesada** e **Interceptor**. Cada skin cambia la silueta, el color de la nave, la llama del propulsor y las estelas de velocidad; la elección se guarda en `localStorage`.
