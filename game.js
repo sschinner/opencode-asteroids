@@ -200,6 +200,7 @@ class Ship {
     this.invincible    = 3;
     this.shootCooldown = 0;
     this.speedBoost    = 0;
+    this.tripleShot    = 0;
     this.dead          = false;
   }
 
@@ -208,6 +209,7 @@ class Ship {
     if (this.invincible    > 0) this.invincible    -= dt;
     if (this.shootCooldown > 0) this.shootCooldown -= dt;
     if (this.speedBoost    > 0) this.speedBoost    -= dt;
+    if (this.tripleShot    > 0) this.tripleShot    -= dt;
 
     const ROT   = 3.5;   // rad/s
     const THRUST = 260 * (this.speedBoost > 0 ? 2 : 1);  // px/s²
@@ -234,6 +236,19 @@ class Ship {
     const NOSE = 21;
     const ox = this.x + Math.cos(this.angle) * NOSE;
     const oy = this.y + Math.sin(this.angle) * NOSE;
+
+    // Tiro triple: 3 balas paralelas en fila, todas hacia adelante
+    if (this.tripleShot > 0) {
+      const SPREAD = 7;
+      const px = -Math.sin(this.angle) * SPREAD;
+      const py =  Math.cos(this.angle) * SPREAD;
+      return [
+        new Bullet(ox, oy, this.angle),
+        new Bullet(ox + px, oy + py, this.angle),
+        new Bullet(ox - px, oy - py, this.angle),
+      ];
+    }
+
     return [new Bullet(ox, oy, this.angle)];
   }
 
@@ -321,11 +336,13 @@ const POWERUP_RADIUS       = 14;
 const POWERUP_TTL          = 8;          // segundos antes de desvanecerse
 const SPEED_DROP_CHANCE    = 0.15;
 const SPEED_BOOST_DURATION = 5;          // segundos de efecto
+const TRIPLE_BOOST_DURATION = 5;          // segundos de efecto
 
 class PowerUp {
-  constructor(x, y) {
+  constructor(x, y, type = 'speed') {
     this.x       = x;
     this.y       = y;
+    this.type    = type;
     this.radius  = POWERUP_RADIUS;
     this.rot     = rand(0, Math.PI * 2);
     this.rotSpeed = rand(-1, 1);
@@ -350,15 +367,25 @@ class PowerUp {
     ctx.lineWidth   = 1.5;
     ctx.lineJoin    = 'round';
 
-    // Doble cheurón (»)
-    for (let i = 0; i < 2; i++) {
-      const s = i ? 6 : 0;   // desplazamiento del cheurón interior
-      ctx.beginPath();
-      ctx.moveTo( s - 5, 8);
-      ctx.lineTo( s + 5, 0);
-      ctx.lineTo( s - 5, -8);
-      ctx.stroke();
+    // Icono según el tipo
+    ctx.beginPath();
+    if (this.type === 'triple') {
+      // Tres líneas paralelas (tiro triple)
+      for (let i = 0; i < 3; i++) {
+        const yy = (i - 1) * 5;
+        ctx.moveTo(-6, yy);
+        ctx.lineTo( 6, yy);
+      }
+    } else {
+      // Doble cheurón (») — velocidad
+      for (let i = 0; i < 2; i++) {
+        const s = i ? 6 : 0;   // desplazamiento del cheurón interior
+        ctx.moveTo( s - 5, 8);
+        ctx.lineTo( s + 5, 0);
+        ctx.lineTo( s - 5, -8);
+      }
     }
+    ctx.stroke();
 
     ctx.beginPath();
     ctx.arc(0, 0, this.radius, 0, Math.PI * 2);
@@ -467,7 +494,8 @@ function update(dt) {
   // Nave recoge power-up
   for (const p of powerups) {
     if (!p.dead && dist(ship, p) < ship.radius + p.radius) {
-      ship.speedBoost = SPEED_BOOST_DURATION;
+      if (p.type === 'triple') ship.tripleShot = TRIPLE_BOOST_DURATION;
+      else                     ship.speedBoost = SPEED_BOOST_DURATION;
       p.dead = true;
       explode(p.x, p.y, 8);
     }
@@ -486,9 +514,9 @@ function update(dt) {
         a.dead = true;
         score += a.points;
         explode(a.x, a.y, a.explodeCount);
-        // Drop de power-up "Velocidad" (solo si no hay uno activo)
+        // Drop de power-up (solo si no hay uno activo)
         if (a.dropsPowerUp && !powerups.some(p => !p.dead) && Math.random() < SPEED_DROP_CHANCE)
-          powerups.push(new PowerUp(a.x, a.y));
+          powerups.push(new PowerUp(a.x, a.y, Math.random() < 0.5 ? 'speed' : 'triple'));
         newAsteroids.push(...a.split());
       }
     }
@@ -541,6 +569,12 @@ function drawHUD() {
   if (ship.speedBoost > 0) {
     ctx.fillStyle = 'rgba(255,255,255,0.8)';
     ctx.fillText(`VELOCIDAD ${Math.ceil(ship.speedBoost)}`, W / 2, 48);
+    ctx.fillStyle = '#fff';
+  }
+
+  if (ship.tripleShot > 0) {
+    ctx.fillStyle = 'rgba(255,255,255,0.8)';
+    ctx.fillText(`TRIPLE DISPARO ${Math.ceil(ship.tripleShot)}`, W / 2, ship.speedBoost > 0 ? 68 : 48);
     ctx.fillStyle = '#fff';
   }
 
