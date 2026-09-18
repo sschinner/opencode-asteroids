@@ -68,6 +68,9 @@ class Asteroid {
     this.y    = y;
     this.size = size;
     this.radius = RADII[size];
+    this.points      = POINTS[size];
+    this.explodeCount = size * 5;
+    this.dropsPowerUp = true;
     this.dead = false;
 
     const angle = rand(0, Math.PI * 2);
@@ -114,6 +117,70 @@ class Asteroid {
       ctx.lineTo(this.verts[i][0], this.verts[i][1]);
     ctx.closePath();
     ctx.stroke();
+    ctx.restore();
+  }
+}
+
+// ── Estrella fugaz ────────────────────────────────────────────────────────────
+class EstrellaFugaz extends Asteroid {
+  constructor() {
+    const edge = randInt(0, 3);
+    const pos  = rand(0, 1);
+    let x, y;
+    if (edge === 0)      { x = pos * W;       y = -24; }
+    else if (edge === 1) { x = W + 24;        y = pos * H; }
+    else if (edge === 2) { x = pos * W;       y = H + 24; }
+    else                 { x = -24;           y = pos * H; }
+
+    super(x, y, 0);
+    this.radius = 10;
+    this.points      = 0;
+    this.explodeCount = 10;
+    this.dropsPowerUp = false;
+
+    const speed = rand(140, 200);
+    const ang   = Math.atan2(H / 2 - y, W / 2 - x) + rand(-0.6, 0.6);
+    this.vx = Math.cos(ang) * speed;
+    this.vy = Math.sin(ang) * speed;
+    this.rotSpeed = 0;
+    this.rotVisible = Math.atan2(this.vy, this.vx) + Math.PI;
+    this.ttl = rand(5, 8);
+  }
+
+  update(dt) {
+    super.update(dt);
+    this.ttl -= dt;
+    if (this.ttl <= 0) this.dead = true;
+  }
+
+  split() { return []; }
+
+  draw() {
+    if (this.ttl < 2 && Math.floor(this.ttl * 6) % 2 === 0) return;
+
+    ctx.save();
+    ctx.translate(this.x, this.y);
+    ctx.rotate(this.rotVisible);
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth   = 1.5;
+    ctx.lineJoin    = 'round';
+
+    // Estela: trazos que van perdiendo longitud hacia atrás
+    ctx.globalAlpha = 0.35;
+    for (let i = 1; i <= 4; i++) {
+      const len = 10 * i;
+      ctx.beginPath();
+      ctx.moveTo(-8 - len, -3 * i / 2);
+      ctx.lineTo(-8 - len - 8, -3 * i / 2);
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+
+    // Cuerpo: elipse alargada apuntando al sentido del movimiento
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 11, 5, 0, 0, Math.PI * 2);
+    ctx.stroke();
+
     ctx.restore();
   }
 }
@@ -307,6 +374,7 @@ let ship, bullets, asteroids, particles, powerups;
 let score, lives, level;
 let state;      // 'playing' | 'dead' | 'gameover'
 let deadTimer;
+let meteorTimer;
 
 function spawnAsteroids(count) {
   const SAFE_DIST = 130;
@@ -330,6 +398,7 @@ function initGame() {
   lives  = 3;
   level  = 1;
   state  = 'playing';
+  meteorTimer = rand(3, 6);
   spawnAsteroids(4);
 }
 
@@ -339,6 +408,7 @@ function nextLevel() {
   particles = [];
   powerups  = [];
   ship.reset();
+  meteorTimer = rand(3, 6);
   spawnAsteroids(3 + level);
 }
 
@@ -387,6 +457,13 @@ function update(dt) {
   particles.forEach(p => p.update(dt));
   powerups.forEach(p => p.update(dt));
 
+  // Aparición aleatoria de Estrella fugaz
+  meteorTimer -= dt;
+  if (meteorTimer <= 0) {
+    asteroids.push(new EstrellaFugaz());
+    meteorTimer = rand(5, 9);
+  }
+
   // Nave recoge power-up
   for (const p of powerups) {
     if (!p.dead && dist(ship, p) < ship.radius + p.radius) {
@@ -407,10 +484,10 @@ function update(dt) {
       if (!a.dead && !b.dead && dist(b, a) < a.radius) {
         b.dead = true;
         a.dead = true;
-        score += POINTS[a.size];
-        explode(a.x, a.y, a.size * 5);
+        score += a.points;
+        explode(a.x, a.y, a.explodeCount);
         // Drop de power-up "Velocidad" (solo si no hay uno activo)
-        if (!powerups.some(p => !p.dead) && Math.random() < SPEED_DROP_CHANCE)
+        if (a.dropsPowerUp && !powerups.some(p => !p.dead) && Math.random() < SPEED_DROP_CHANCE)
           powerups.push(new PowerUp(a.x, a.y));
         newAsteroids.push(...a.split());
       }
